@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider     = "prisma-client-js"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String
+  role         String // "ADMIN", "DOCTOR", "RECEPCION"
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  accessLogs   AccessLog[]
+  appointments Appointment[] @relation("DoctorAppointments")
+}
+
+model AccessLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  ip        String
+  userAgent String
+  event     String // "LOGIN_SUCCESS", "LOGIN_FAILED", "LOGOUT"
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+model Patient {
+  id             Int           @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  ci             String        @unique // Cédula de identidad
+  birthDate      DateTime
+  gender         String // "M", "F", "O"
+  phone          String
+  email          String?
+  address        String?
+  bloodType      String?
+  allergies      String?
+  medicalHistory String?
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  appointments   Appointment[]
+}
+
+model Appointment {
+  id           Int       @id @default(autoincrement())
+  patientId    Int
+  patient      Patient   @relation(fields: [patientId], references: [id])
+  doctorId     Int
+  doctor       User      @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  scheduledAt  DateTime
+  reason       String
+  status       String    @default("SCHEDULED") // "SCHEDULED","COMPLETED","CANCELLED","NO_SHOW"
+  notes        String?
+  diagnosis    String?
+  prescription String?
+  deletedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
