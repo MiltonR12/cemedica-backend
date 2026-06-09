@@ -1,6 +1,9 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
+# Install build tools needed for better-sqlite3 (native addon)
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
 RUN npm install -g pnpm
@@ -18,16 +21,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN npm install -g pnpm
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
-
+# Copy everything from builder (node_modules already compiled)
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.pnpm ./node_modules/.pnpm
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY package.json ./
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
