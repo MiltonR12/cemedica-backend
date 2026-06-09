@@ -15,11 +15,24 @@ model User {
   email        String        @unique
   password     String
   name         String
-  role         String // "ADMIN", "DOCTOR", "RECEPCION"
+  role         String        // "ADMIN", "DOCTOR", "RECEPCION"
+  isActive     Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   accessLogs   AccessLog[]
+  auditLogs    AuditLog[]
   appointments Appointment[] @relation("DoctorAppointments")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String   // "PATIENT_CREATED", "APPOINTMENT_UPDATED", "USER_ROLE_CHANGED", etc.
+  entity    String   // "Patient", "Appointment", "User"
+  entityId  Int?
+  detail    String?
+  createdAt DateTime @default(now())
 }
 
 model AccessLog {

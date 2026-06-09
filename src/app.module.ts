@@ -7,10 +7,12 @@ import { UsersModule } from './users/users.module';
 import { PatientsModule } from './patients/patients.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { ReportsModule } from './reports/reports.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    AuditModule,
     AuthModule,
     UsersModule,
     PatientsModule,
@@ -21,3 +23,4 @@ import { ReportsModule } from './reports/reports.module';
   providers: [AppService],
 })
 export class AppModule {}
+

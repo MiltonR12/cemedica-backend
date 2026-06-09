@@ -6,27 +6,36 @@ import {
 import { PrismaService } from '../prisma.service';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class PatientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private audit: AuditService,
+  ) {}
 
-  async create(dto: CreatePatientDto) {
+  async create(dto: CreatePatientDto, userId?: number) {
     const existing = await this.prisma.patient.findUnique({ where: { ci: dto.ci } });
     if (existing) {
       if (existing.deletedAt) {
         // Reactivate soft-deleted patient
-        return this.prisma.patient.update({
+        const reactivated = await this.prisma.patient.update({
           where: { ci: dto.ci },
           data: { ...dto, deletedAt: null, birthDate: new Date(dto.birthDate) },
         });
+        await this.audit.log(userId, 'PATIENT_CREATED', 'Patient', reactivated.id, `${reactivated.firstName} ${reactivated.lastName} (reactivado)`);
+        return reactivated;
       }
       throw new ConflictException(`Ya existe un paciente con CI: ${dto.ci}`);
     }
 
-    return this.prisma.patient.create({
+    const patient = await this.prisma.patient.create({
       data: { ...dto, birthDate: new Date(dto.birthDate) },
     });
+
+    await this.audit.log(userId, 'PATIENT_CREATED', 'Patient', patient.id, `${patient.firstName} ${patient.lastName}`);
+    return patient;
   }
 
   async findAll(search?: string) {
@@ -61,24 +70,27 @@ export class PatientsService {
     return patient;
   }
 
-  async update(id: number, dto: UpdatePatientDto) {
+  async update(id: number, dto: UpdatePatientDto, userId?: number) {
     await this.findOne(id);
     const rawDto = dto as Partial<import('./dto/create-patient.dto').CreatePatientDto>;
-    return this.prisma.patient.update({
+    const updated = await this.prisma.patient.update({
       where: { id },
       data: {
         ...dto,
         ...(rawDto.birthDate ? { birthDate: new Date(rawDto.birthDate) } : {}),
       },
     });
+    await this.audit.log(userId, 'PATIENT_UPDATED', 'Patient', id, `${updated.firstName} ${updated.lastName}`);
+    return updated;
   }
 
-  async remove(id: number) {
-    await this.findOne(id);
+  async remove(id: number, userId?: number) {
+    const patient = await this.findOne(id);
     await this.prisma.patient.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+    await this.audit.log(userId, 'PATIENT_DELETED', 'Patient', id, `${patient.firstName} ${patient.lastName}`);
     return { message: 'Paciente eliminado correctamente' };
   }
 }

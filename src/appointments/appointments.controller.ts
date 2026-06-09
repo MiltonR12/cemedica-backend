@@ -9,11 +9,16 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+interface RequestWithUser {
+  user?: { sub: number; email: string; role: string };
+}
 
 @UseGuards(JwtAuthGuard)
 @Controller('appointments')
@@ -21,8 +26,8 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  create(@Body() dto: CreateAppointmentDto) {
-    return this.appointmentsService.create(dto);
+  create(@Body() dto: CreateAppointmentDto, @Request() req: RequestWithUser) {
+    return this.appointmentsService.create(dto, req.user?.sub);
   }
 
   @Get()
@@ -56,12 +61,16 @@ export class AppointmentsController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAppointmentDto,
+    @Request() req: RequestWithUser,
   ) {
-    return this.appointmentsService.update(id, dto);
+    return this.appointmentsService.update(id, dto, req.user?.sub);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.appointmentsService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.appointmentsService.remove(id, req.user?.sub);
   }
 }
