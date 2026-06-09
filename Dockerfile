@@ -27,11 +27,14 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.pnpm ./node_modules/.pnpm
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
 
 ENV PORT=3000
 ENV NODE_ENV=production
 
-# Run migrations and start database locally for SQLite before running
-CMD ["pnpm", "run", "start:prod"]
+CMD ["sh", "docker-entrypoint.sh"]
