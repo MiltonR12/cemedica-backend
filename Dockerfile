@@ -1,9 +1,6 @@
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
-# Install build tools needed for better-sqlite3 (native addon)
-RUN apk add --no-cache python3 make g++
-
 WORKDIR /app
 
 RUN npm install -g pnpm
@@ -21,7 +18,6 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy everything from builder (node_modules already compiled)
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
